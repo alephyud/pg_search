@@ -3,6 +3,7 @@
 require "pg_search/configuration/association"
 require "pg_search/configuration/column"
 require "pg_search/configuration/foreign_column"
+require "pg_search/configuration/sql_expression"
 
 module PgSearch
   class Configuration
@@ -24,7 +25,7 @@ module PgSearch
     end
 
     def columns
-      regular_columns + associated_columns
+      regular_columns + sql_expressions + associated_columns
     end
 
     def regular_columns
@@ -32,6 +33,14 @@ module PgSearch
 
       Array(options[:against]).map do |column_name, weight|
         Column.new(column_name, weight, model)
+      end
+    end
+
+    def sql_expressions
+      return [] unless options[:against_sql]
+
+      Array(options[:against_sql]).map do |expression, weight|
+        SqlExpression.new(expression, weight, model)
       end
     end
 
@@ -84,7 +93,7 @@ module PgSearch
     end
 
     VALID_KEYS = %w[
-      against ranked_by ignoring using query associated_against order_within_rank
+      against ranked_by ignoring using query associated_against order_within_rank against_sql
     ].map(&:to_sym)
 
     VALID_VALUES = {
@@ -92,8 +101,9 @@ module PgSearch
     }.freeze
 
     def assert_valid_options(options)
-      unless options[:against] || options[:associated_against]
-        raise ArgumentError, "the search scope #{@name} must have :against or :associated_against in its options"
+      unless options[:against] || options[:associated_against] || options[:against_sql]
+        raise ArgumentError,
+              "the search scope #{@name} must have :against, :associated_against or :against_sql in its options"
       end
 
       options.assert_valid_keys(VALID_KEYS)

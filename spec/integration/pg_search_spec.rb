@@ -35,6 +35,13 @@ describe "an Active Record model which includes PgSearch" do
       expect(scope).to be_an ActiveRecord::Relation
     end
 
+    it "can search against custom sql" do
+      ModelWithPgSearch.pg_search_scope :search_title_and_content,
+                                        against_sql: "title || ' ' || content"
+      example = ModelWithPgSearch.create!(title: 'foo', content: 'bar')
+      expect(ModelWithPgSearch.search_title_and_content("foo bar")).to eq([example])
+    end
+
     context "when passed a lambda" do
       it "builds a dynamic scope" do
         ModelWithPgSearch.pg_search_scope :search_title_or_content,
